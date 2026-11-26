@@ -56,18 +56,14 @@ class MainActivity : AppCompatActivity() {
             setPadding(dp(24), dp(32), dp(24), dp(32))
         }
 
-        root.addView(TextView(this).apply {
-            text = "CallingOxa"
-            textSize = 28f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-        })
-        root.addView(TextView(this).apply {
-            text = "Fake Call"
-            textSize = 14f
-            setTextColor(Color.parseColor("#F97316"))
-            gravity = Gravity.CENTER
-        })
+                root.addView(
+            ImageView(this).apply {
+                setImageResource(R.drawable.logo)
+                adjustViewBounds = true
+                setBackgroundColor(Color.WHITE)
+            },
+            LinearLayout.LayoutParams(dp(220), LinearLayout.LayoutParams.WRAP_CONTENT)
+        )
 
         photo = ImageView(this).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP

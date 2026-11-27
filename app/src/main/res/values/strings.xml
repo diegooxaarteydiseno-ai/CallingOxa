@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_description">CallingOxa usa este servicio solo para detectar los botones de volumen y lanzar la llamada falsa. No lee ni guarda nada de tu pantalla.</string>
+</resources>

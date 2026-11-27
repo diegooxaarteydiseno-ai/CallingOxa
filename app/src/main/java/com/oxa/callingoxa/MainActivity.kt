@@ -429,7 +429,19 @@ class MainActivity : AppCompatActivity() {
         }
         if (!VolumeAccessibilityService.running) {
             AlertDialog.Builder(this)
-                .setTitle("Activa el servicio")
+    .setTitle("Uso del servicio de accesibilidad")
+    .setMessage(
+        "CallingOxa usa el servicio de accesibilidad de Android únicamente para detectar cuándo pulsas los botones de volumen, incluso con la pantalla apagada. Así puede iniciar la llamada simulada que configuraste.\n\n" +
+            "La app no lee el contenido de tu pantalla ni accede a tus mensajes, contraseñas u otras apps, y no recopila ni comparte datos personales con terceros.\n\n" +
+            "Mientras CallingOxa esté activada, los botones de volumen no cambiarán el volumen del teléfono.\n\n" +
+            "Para activarlo, habilita CallingOxa en los ajustes de Accesibilidad."
+    )
+    .setPositiveButton("Acepto") { _, _ ->
+        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+    }
+    .setNegativeButton("No acepto", null)
+    .setCancelable(false)
+    .show()
                 .setMessage(
                     "En Accesibilidad, busca CallingOxa y actívalo. " +
                         "Luego vuelve aquí y pulsa Activar otra vez."

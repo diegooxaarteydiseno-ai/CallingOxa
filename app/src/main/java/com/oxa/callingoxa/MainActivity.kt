@@ -12,7 +12,6 @@ import android.graphics.Outline
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
 import android.provider.Settings
 import android.text.InputType
 import android.view.Gravity
@@ -24,7 +23,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -56,7 +54,7 @@ class MainActivity : AppCompatActivity() {
             setPadding(dp(24), dp(32), dp(24), dp(32))
         }
 
-                root.addView(
+        root.addView(
             ImageView(this).apply {
                 setImageResource(R.drawable.logo)
                 adjustViewBounds = true
@@ -138,10 +136,9 @@ class MainActivity : AppCompatActivity() {
             AlertDialog.Builder(this)
                 .setTitle("Permisos necesarios")
                 .setMessage(
-                    "Esta aplicación requiere funcionar en segundo plano para detectar " +
-                        "los botones de volumen con la pantalla apagada.\n\n" +
-                        "Te voy a pedir: notificaciones, ignorar la optimización de batería " +
-                        "y notificaciones a pantalla completa."
+                    "Esta aplicación necesita notificaciones a pantalla completa para " +
+                        "mostrar la llamada, y el servicio de accesibilidad para detectar " +
+                        "los botones de volumen con la pantalla apagada."
                 )
                 .setPositiveButton("Continuar") { _, _ ->
                     Prefs.setSetupDone(this)
@@ -219,15 +216,12 @@ class MainActivity : AppCompatActivity() {
         photo.setImageBitmap(bmp)
     }
 
-    // 0 = notificaciones, 1 = batería, 2 = pantalla completa, -1 = todo listo
+    // 0 = notificaciones, 2 = pantalla completa, -1 = todo listo
     private fun nextMissing(): Int {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
         ) return 0
-
-        val pm = getSystemService(PowerManager::class.java)
-        if (!pm.isIgnoringBatteryOptimizations(packageName)) return 1
 
         if (Build.VERSION.SDK_INT >= 34) {
             val nm = getSystemService(NotificationManager::class.java)
@@ -239,12 +233,6 @@ class MainActivity : AppCompatActivity() {
     private fun requestNext() {
         when (nextMissing()) {
             0 -> requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1002)
-            1 -> startActivity(
-                Intent(
-                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                    Uri.parse("package:$packageName")
-                )
-            )
             2 -> if (Build.VERSION.SDK_INT >= 34) {
                 startActivity(
                     Intent(
@@ -258,31 +246,38 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateStatus() {
         val missing = nextMissing()
-        if (missing == -1) {
-            status.text = "Permisos listos"
-            permBtn.visibility = View.GONE
-        } else {
-            status.text = "Faltan permisos. Pulsa el botón hasta que desaparezca."
-            permBtn.visibility = View.VISIBLE
+        val acc = VolumeAccessibilityService.running
+        status.text = when {
+            missing != -1 -> "Faltan permisos. Pulsa el botón hasta que desaparezca."
+            !acc -> "Falta activar CallingOxa en Ajustes, Accesibilidad."
+            else -> "Todo listo"
         }
+        permBtn.visibility = if (missing == -1) View.GONE else View.VISIBLE
         toggle.text = if (Prefs.active(this)) "Desactivar" else "Activar"
     }
 
     private fun toggleService() {
         saveAll()
-        val intent = Intent(this, VolumeService::class.java)
         if (Prefs.active(this)) {
-            stopService(intent)
             Prefs.setActive(this, false)
-        } else {
-            if (nextMissing() != -1) {
-                Toast.makeText(this, "Faltan permisos", Toast.LENGTH_SHORT).show()
-                requestNext()
-                return
-            }
-            ContextCompat.startForegroundService(this, intent)
-            Prefs.setActive(this, true)
+            updateStatus()
+            return
         }
+        if (!VolumeAccessibilityService.running) {
+            AlertDialog.Builder(this)
+                .setTitle("Activa el servicio")
+                .setMessage(
+                    "En Accesibilidad, busca CallingOxa y actívalo. " +
+                        "Luego vuelve aquí y pulsa Activar otra vez."
+                )
+                .setPositiveButton("Abrir Accesibilidad") { _, _ ->
+                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+            return
+        }
+        Prefs.setActive(this, true)
         updateStatus()
     }
 }

@@ -1,0 +1,25 @@
+name: D13goox41718
+on:
+  workflow_dispatch:
+jobs:
+  keygen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: >
+          keytool -genkeypair -v -keystore calinoxa.jks
+          -keyalg RSA -keysize 2048 -validity 10000
+          -alias calinoxa
+          -storepass D13goox41718
+          -keypass D13goox41718
+          -dname "CN=Diego, O=Calinoxa, C=UY"
+      - run: base64 -w 0 calinoxa.jks > calinoxa.jks.base64.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clave-calinoxa
+          path: |
+            calinoxa.jks
+            calinoxa.jks.base64.txt
